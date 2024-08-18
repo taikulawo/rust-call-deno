@@ -1,5 +1,4 @@
-// Copyright 2018-2023 the Deno authors. All rights reserved. MIT license.
-
+mod ffi;
 use deno_runtime::deno_core::error::AnyError;
 use deno_runtime::deno_core::resolve_path;
 use deno_runtime::deno_core::serde_json;
