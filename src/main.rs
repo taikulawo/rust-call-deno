@@ -18,6 +18,8 @@ pub async fn op_redirect(state: Rc<RefCell<OpState>>, #[string] s: String) -> Re
     println!("{s}");
     Ok(())
 }
+#[op2(fast)]
+pub fn op_set_header(state: &mut OpState) {}
 // 2. rust call deno http filter
 
 struct SharedData {}
@@ -78,9 +80,10 @@ fn eval(context: &mut MainWorker, code: &'static str) -> anyhow::Result<serde_js
 
 #[cfg(test)]
 mod tests {
-    use crate::http::djs::call;
+    use crate::call;
     #[tokio::test]
     async fn test_load() {
         call().await.unwrap();
     }
 }
+fn main() {}
