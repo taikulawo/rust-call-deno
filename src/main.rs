@@ -11,7 +11,6 @@ use deno_runtime::{
     worker::{MainWorker, WorkerOptions},
 };
 use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
-// 1. deno call rust function
 #[op2(async)]
 #[serde]
 pub async fn op_redirect(state: Rc<RefCell<OpState>>, #[string] s: String) -> Result<(), AnyError> {
@@ -20,28 +19,27 @@ pub async fn op_redirect(state: Rc<RefCell<OpState>>, #[string] s: String) -> Re
 }
 #[op2(fast)]
 pub fn op_set_header(state: &mut OpState) {}
-// 2. rust call deno http filter
 
 struct SharedData {}
 
 type SData = Arc<SharedData>;
 extension!(
-    HttpFilterExt,
+    http_filter_ext,
     ops = [op_redirect],
+    esm = ["examples/filter_ext.ts"],
     options = {
         shared: SData,
     },
-    esm = ["examples/filter_ext.ts"],
-    docs = "A small sample extension",
     state = |state, options| {
-        state.put::<SData>(options.shared)
-    }
+        state.put(options.shared);
+    },
+    docs = "A small sample extension",
 );
 const CURRENT_DIR: &'static str = env!("CARGO_MANIFEST_DIR");
 async fn call() -> Result<(), AnyError> {
     let shared = Arc::new(SharedData {});
     let options = WorkerOptions {
-        extensions: vec![HttpFilterExt::init_ops_and_esm(shared)],
+        extensions: vec![http_filter_ext::init_ops_and_esm(shared)],
         ..Default::default()
     };
     let current_dir = Path::new(CURRENT_DIR).join("examples");
@@ -50,13 +48,44 @@ async fn call() -> Result<(), AnyError> {
     let perm = PermissionsContainer::new(permissions);
     let mut worker = MainWorker::bootstrap_from_options(main_module.clone(), perm, options);
     worker.execute_main_module(&main_module).await?;
-    let code = "rustCallback('lol')";
-    let result = eval(&mut worker, code).unwrap();
-
+    // Q1: how to get js http_request_header_filter hook in rust and store it for later use?
+    // Q2:
+    let req = BridgeHttpRequest { path: "/".into() };
+    let resp = BridgeHttpResponse {};
+    // how I call http_request_header_filter in rust and pass req/resp to it?
+    // RUST_FUNCTION_http_request_header_filter(req, resp)
     println!("execute_main_module end");
     worker.run_event_loop(false).await?;
     println!("run_event_loop  end");
     Ok(())
+}
+struct BridgeHttpRequest {
+    path: String,
+}
+impl BridgeHttpRequest {
+    pub fn url(&self) -> String {
+        todo!()
+    }
+    pub fn path(&self) -> String {
+        self.path.clone()
+    }
+    pub fn get_header(&self, k: String) -> String {
+        todo!()
+    }
+    pub fn redirect(&self, k: String) {
+        todo!()
+    }
+    pub fn redirect(&self) -> String {
+        todo!()
+    }
+}
+
+struct BridgeHttpResponse {}
+
+impl BridgeHttpResponse {
+    pub fn body(&self) -> Vec<u8> {}
+    pub fn set_header(&self, k: String, v: String) {}
+    pub fn get_header(&self, k: String) -> String {}
 }
 
 fn eval(context: &mut MainWorker, code: &'static str) -> anyhow::Result<serde_json::Value> {
