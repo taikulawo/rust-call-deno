@@ -49,14 +49,14 @@ async fn call() -> Result<(), AnyError> {
     let mut worker = MainWorker::bootstrap_from_options(main_module.clone(), perm, options);
     worker.execute_main_module(&main_module).await?;
     // Q1: how to get js http_request_header_filter hook in rust and store it for later use?
-    // Q2:
+    // Q2: how I call http_request_header_filter in rust and pass req/resp to it?
+    // for example:
     let req = BridgeHttpRequest { path: "/".into() };
     let resp = BridgeHttpResponse {};
-    // how I call http_request_header_filter in rust and pass req/resp to it?
-    // RUST_FUNCTION_http_request_header_filter(req, resp)
+    //  RUST_FUNCTION_http_request_header_filter(req, resp).await;
     println!("execute_main_module end");
     worker.run_event_loop(false).await?;
-    println!("run_event_loop  end");
+    println!("run_event_loop end");
     Ok(())
 }
 struct BridgeHttpRequest {
